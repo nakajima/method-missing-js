@@ -29,6 +29,26 @@ Screw.Unit(function() {
       expect(receiver.calls[0]).to(equal, 'bar');
     });
 
+    it("allows different calls", function() {
+      MM(receiver, function() {
+        this.fizz();
+        this.buzz();
+      });
+      expect(receiver.calls[0]).to(equal, 'fizz');
+      expect(receiver.calls[1]).to(equal, 'buzz');
+    });
+
+    it("allows multiple calls", function() {
+      MM(receiver, function() {
+        this.fizz();
+        this.fizz();
+        this.buzz(); // requires another pass
+      });
+      expect(receiver.calls[0]).to(equal, 'fizz');
+      expect(receiver.calls[1]).to(equal, 'fizz');
+      expect(receiver.calls[2]).to(equal, 'buzz');
+    });
+
     it("removes methodMissing from receiver after", function() {
       MM(receiver, function() { this.bar(); });
       expect(receiver.bar).to(be_undefined);
