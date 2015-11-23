@@ -1,55 +1,58 @@
 // method-missing-js
-(function($) {
+(function() {
+  "use strict";
+
   function MM(receiver, fn, replaced) {
     replaced = replaced || [];
-    var callCounts = {};
+    var replaceIdx;
     try { fn.call(receiver); }
     catch(e) {
       // If methodMissing not defined, just re-throw error.
       if (!receiver.methodMissing) { throw(e); }
 
       // Find all method calls
-      var str = fn.toString();
-      var keys = str.match(/this\.(\w+)/g);
-
-      function replaceKey(key) {
-        key = key.split('.')[1];
-        var called = false;
-
-        // Ensure things get called only as many times as they should
-        if (!callCounts[key]) { callCounts[key] = 0; }
-        var allowedCount = str.match(new RegExp(key, 'g')).length;
-
-        // Find the missing key...
-        if (replaced.indexOf(key) > -1) {
-          return;
-        }
-
-        // Add it to list of keys replaced so far...
-        replaced.unshift(key);
-
-        // Define key to use method missing.
-        receiver[key] = function() {
-          if (++callCounts[key] <= allowedCount) {
-            var a = [key];
-            if (i = arguments.length) { while(i--) { a.push(arguments[i]); } }
-            receiver.methodMissing.apply(receiver, a);
-          }
-        }
-      }
+      var fnBodyStr = fn.toString();
+      var keys = fnBodyStr.match(/this\.(\w+)/g);
 
       // Find the missing key...
-      var i = keys.length;
-      while(i--) { replaceKey(keys[i]); }
+      replaceIdx = keys.length;
+      while(replaceIdx--) { replaceKey(keys[replaceIdx], receiver, replaced, fnBodyStr); }
 
       // Try again.
       MM(receiver, fn, replaced)
     }
 
     // Clear replaced keys
-    var i = replaced.length;
-    while(i--) { delete(receiver[replaced[i]]); }
+    replaceIdx = replaced.length;
+    while(replaceIdx--) { delete(receiver[replaced[replaceIdx]]); }
+  }
+
+  function replaceKey(key, receiver, replaced, fnBodyStr) {
+    var callCounts = {};
+    key = key.split('.')[1];
+
+    // Ensure things get called only as many times as they should
+    if (!callCounts[key]) { callCounts[key] = 0; }
+    var allowedCount = fnBodyStr.match(new RegExp(key, 'g')).length;
+
+    // Find the missing key...
+    if (replaced.indexOf(key) > -1) {
+      return;
+    }
+
+    // Add it to list of keys replaced so far...
+    replaced.unshift(key);
+
+    // Define key to use method missing.
+    receiver[key] = function() {
+      var argIdx;
+      if (++callCounts[key] <= allowedCount) {
+        var a = [key];
+        if (argIdx = arguments.length) { while(argIdx--) { a.push(arguments[argIdx]); } }
+        receiver.methodMissing.apply(receiver, a);
+      }
+    }
   }
 
   window.MM = MM;
-})(jQuery);
+})();
